@@ -1,4 +1,4 @@
-module github.com/fclairamb/ftpserverlib
+module github.com/KirCute/ftpserverlib-pasvportmap
 
 go 1.21
 
