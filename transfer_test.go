@@ -682,10 +682,7 @@ func TestBasicABOR(t *testing.T) {
 func TestTransferABOR(t *testing.T) {
 	t.Run("passive-mode", func(t *testing.T) {
 		server := NewTestServer(t, false)
-		server.settings.PassiveTransferPortRange = &PortRange{
-			Start: 49152,
-			End:   65535,
-		}
+		server.settings.PassiveTransferPortGetter = PortRange(49152, 65535)
 		conf := goftp.Config{
 			User:     authUser,
 			Password: authPass,
@@ -1163,10 +1160,7 @@ func TestPASVIPMatch(t *testing.T) {
 
 func TestPassivePortExhaustion(t *testing.T) {
 	server := NewTestServer(t, false)
-	server.settings.PassiveTransferPortRange = &PortRange{
-		Start: 40000,
-		End:   40005,
-	}
+	server.settings.PassiveTransferPortGetter = PortRange(40000, 40005)
 
 	client, err := goftp.DialConfig(goftp.Config{
 		User:     authUser,

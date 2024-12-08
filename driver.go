@@ -3,6 +3,7 @@ package ftpserver
 import (
 	"crypto/tls"
 	"io"
+	"math/rand"
 	"net"
 	"os"
 
@@ -209,10 +210,24 @@ type FileTransferError interface {
 	TransferError(err error)
 }
 
-// PortRange is a range of ports
-type PortRange struct {
-	Start int // Range start
-	End   int // Range end
+// PasvPortGetter is called when a passive transfer is booting and provides a pair of ports.
+// The first will be exposed to the client, the second will be listened on
+type PasvPortGetter func() (int, int, bool)
+
+// PortRange generates a PasvPortGetter from a range of ports
+func PortRange(start, end int) PasvPortGetter {
+	return func() (int, int, bool) {
+		port := start + rand.Intn(end-start+1)
+		return port, port, true
+	}
+}
+
+// PortMapper generates a PasvPortGetter from a map of ports
+func PortMapper(exposedStart, exposedEnd, listenedStart int) PasvPortGetter {
+	return func() (int, int, bool) {
+		offset := rand.Intn(exposedEnd - exposedStart + 1)
+		return exposedStart + offset, listenedStart + offset, true
+	}
 }
 
 // PublicIPResolver takes a ClientContext for a connection and returns the public IP
@@ -245,27 +260,28 @@ const (
 //
 //nolint:maligned
 type Settings struct {
-	Listener                 net.Listener     // (Optional) To provide an already initialized listener
-	ListenAddr               string           // Listening address
-	PublicHost               string           // Public IP to expose (only an IP address is accepted at this stage)
-	PublicIPResolver         PublicIPResolver // (Optional) To fetch a public IP lookup
-	PassiveTransferPortRange *PortRange       // (Optional) Port Range for data connections. Random if not specified
-	ActiveTransferPortNon20  bool             // Do not impose the port 20 for active data transfer (#88, RFC 1579)
-	IdleTimeout              int              // Maximum inactivity time before disconnecting (#58)
-	ConnectionTimeout        int              // Maximum time to establish passive or active transfer connections
-	DisableMLSD              bool             // Disable MLSD support
-	DisableMLST              bool             // Disable MLST support
-	DisableMFMT              bool             // Disable MFMT support (modify file mtime)
-	Banner                   string           // Banner to use in server status response
-	TLSRequired              TLSRequirement   // defines the TLS mode
-	DisableLISTArgs          bool             // Disable ls like options (-a,-la etc.) for directory listing
-	DisableSite              bool             // Disable SITE command
-	DisableActiveMode        bool             // Disable Active FTP
-	EnableHASH               bool             // Enable support for calculating hash value of files
-	DisableSTAT              bool             // Disable Server STATUS, STAT on files and directories will still work
-	DisableSYST              bool             // Disable SYST
-	EnableCOMB               bool             // Enable COMB support
-	DefaultTransferType      TransferType     // Transfer type to use if the client don't send the TYPE command
+	Listener                  net.Listener     // (Optional) To provide an already initialized listener
+	ListenAddr                string           // Listening address
+	PublicHost                string           // Public IP to expose (only an IP address is accepted at this stage)
+	PublicIPResolver          PublicIPResolver // (Optional) To fetch a public IP lookup
+	PassiveTransferPortGetter PasvPortGetter   // (Optional) Port Range for data connections. Random if not specified
+	FindPasvPortAttempts      int              // Maximum number of attempt on finding available passive transfer port
+	ActiveTransferPortNon20   bool             // Do not impose the port 20 for active data transfer (#88, RFC 1579)
+	IdleTimeout               int              // Maximum inactivity time before disconnecting (#58)
+	ConnectionTimeout         int              // Maximum time to establish passive or active transfer connections
+	DisableMLSD               bool             // Disable MLSD support
+	DisableMLST               bool             // Disable MLST support
+	DisableMFMT               bool             // Disable MFMT support (modify file mtime)
+	Banner                    string           // Banner to use in server status response
+	TLSRequired               TLSRequirement   // defines the TLS mode
+	DisableLISTArgs           bool             // Disable ls like options (-a,-la etc.) for directory listing
+	DisableSite               bool             // Disable SITE command
+	DisableActiveMode         bool             // Disable Active FTP
+	EnableHASH                bool             // Enable support for calculating hash value of files
+	DisableSTAT               bool             // Disable Server STATUS, STAT on files and directories will still work
+	DisableSYST               bool             // Disable SYST
+	EnableCOMB                bool             // Enable COMB support
+	DefaultTransferType       TransferType     // Transfer type to use if the client don't send the TYPE command
 	// ActiveConnectionsCheck defines the security requirements for active connections
 	ActiveConnectionsCheck DataConnectionRequirement
 	// PasvConnectionsCheck defines the security requirements for passive connections
