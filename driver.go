@@ -282,8 +282,13 @@ type Settings struct {
 	DisableSYST               bool             // Disable SYST
 	EnableCOMB                bool             // Enable COMB support
 	DefaultTransferType       TransferType     // Transfer type to use if the client don't send the TYPE command
+	// SiteHandlers defines custom SITE command handler
+	SiteHandlers map[string]SiteHandler
 	// ActiveConnectionsCheck defines the security requirements for active connections
 	ActiveConnectionsCheck DataConnectionRequirement
 	// PasvConnectionsCheck defines the security requirements for passive connections
 	PasvConnectionsCheck DataConnectionRequirement
 }
+
+// SiteHandler defines how a SITE command works
+type SiteHandler func(string, ClientDriver) (int, string)
