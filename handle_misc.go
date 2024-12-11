@@ -99,7 +99,7 @@ func (c *clientHandler) handleSITE(param string) error {
 			c.writeMessage(StatusSyntaxErrorNotRecognised, "Unknown SITE subcommand: "+cmd)
 		}
 	} else {
-		errCode, msg := handler(param, c.driver)
+		errCode, msg := handler(params, c.driver)
 		c.writeMessage(errCode, msg)
 	}
 	return nil
